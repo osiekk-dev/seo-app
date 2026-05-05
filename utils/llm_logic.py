@@ -218,6 +218,10 @@ NATURALNOŚĆ I PŁYNNOŚĆ
 → Zakaz wyliczanek tam gdzie pasuje tekst ciągły
 → Przejścia między sekcjami — użyj zdania pomostowego
 → Nie powtarzaj tej samej informacji w różnych akapitach — każda sekcja wnosi NOWĄ wiedzę
+→ Każda sekcja — nawet techniczna — musi zawierać min. 1 zdanie z perspektywy marki/eksperta
+  Przykłady uniwersalne: „Z naszego doświadczenia...”, „W praktyce obserwujemy...”,
+  „Klienci których obsługujemy...”, „Realizując projekty tego typu...”
+  Zakaz sekcji w pełni generycznych — bez głosu marki artykuł traci E-E-A-T
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 STRUKTURY H2 KONKURENCJI (inspiracja — nie kopiuj)
