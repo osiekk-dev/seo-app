@@ -45,7 +45,9 @@ if st.session_state.get("_pending_research_facts") is not None:
     st.session_state["research_facts"] = st.session_state["_pending_research_facts"]
     st.session_state["_pending_research_facts"] = None
 if st.session_state.get("_pending_research_extra_lsi") is not None:
-    st.session_state["research_extra_lsi"] = st.session_state["_pending_research_extra_lsi"]
+    st.session_state["research_extra_lsi"] = st.session_state[
+        "_pending_research_extra_lsi"
+    ]
     st.session_state["_pending_research_extra_lsi"] = None
 
 
@@ -519,7 +521,7 @@ with tab4:
 </style>
 </head>
 <body>
-{{markdown.markdown(st.session_state['generated_article'])}}
+{markdown.markdown(st.session_state['generated_article'])}
 </body>
 </html>"""
             st.download_button(
