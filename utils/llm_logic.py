@@ -291,3 +291,57 @@ Jeśli nie — popraw zanim zwrócisz wynik."""
         messages=[{"role": "user", "content": user_prompt}],
     )
     return message.content[0].text
+
+
+def proofread_article(text: str, brand_name: str = "") -> str:
+    """Korekta gramatyczna i ortograficzna artykułu przez Claude.
+
+    Drugi call do API — poprawia wyłącznie literówki i błędy gramatyczne,
+    nie zmienia treści, słów kluczowych ani struktury Markdown.
+
+    Args:
+        text: Wygenerowany artykuł w formacie Markdown.
+        brand_name: Nazwa marki — chroniona przed zmianą.
+
+    Returns:
+        Poprawiony artykuł w formacie Markdown.
+    """
+    client = Anthropic(api_key=st.secrets["anthropic"]["api_key"])
+
+    protected = (
+        f' Nazwa marki „{brand_name}" jest chroniona — nie zmieniaj jej pisowni.'
+        if brand_name
+        else ""
+    )
+
+    system_prompt = """Jesteś korektorem języka polskiego. Twoje jedyne zadanie to:
+1. Poprawić literówki (np. „oświeteniowych" → „oświetleniowych")
+2. Poprawić błędy gramatyczne (np. zła odmiana, zły przypadek)
+3. Poprawić błędy składniowe (np. urwane zdania, brakujące słowa)
+
+ZAKAZ ABSOLUTNY:
+- Zakaz zmiany jakiejkolwiek treści merytorycznej
+- Zakaz dodawania lub usuwania zdań
+- Zakaz zmiany słów kluczowych SEO i fraz w nagłówkach
+- Zakaz zmiany formatowania Markdown (nagłówki, pogrubienia, listy)
+- Zakaz zmiany liczb, statystyk i nazw własnych
+- Zakaz „ulepszania" stylu — tylko korekta błędów
+
+Zwróć WYŁĄCZNIE poprawiony tekst Markdown. Zero komentarzy, zero wyjaśnień."""
+
+    message = client.messages.create(
+        model="claude-haiku-4-5",
+        system=system_prompt,
+        max_tokens=8192,
+        temperature=0.1,
+        messages=[
+            {
+                "role": "user",
+                "content": (
+                    "Popraw błędy gramatyczne i literówki w poniższym artykule."
+                    f"{protected}\n\n{text}"
+                ),
+            }
+        ],
+    )
+    return message.content[0].text
