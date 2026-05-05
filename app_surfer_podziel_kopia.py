@@ -29,10 +29,24 @@ defaults = {
     "research_facts": "",
     "research_extra_lsi": "",
     "research_done": False,
+    "_pending_research_paa": None,
+    "_pending_research_facts": None,
+    "_pending_research_extra_lsi": None,
 }
 for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
+
+# Przenieś wyniki researchu do pól widgetów przed ich utworzeniem
+if st.session_state.get("_pending_research_paa") is not None:
+    st.session_state["research_paa"] = st.session_state["_pending_research_paa"]
+    st.session_state["_pending_research_paa"] = None
+if st.session_state.get("_pending_research_facts") is not None:
+    st.session_state["research_facts"] = st.session_state["_pending_research_facts"]
+    st.session_state["_pending_research_facts"] = None
+if st.session_state.get("_pending_research_extra_lsi") is not None:
+    st.session_state["research_extra_lsi"] = st.session_state["_pending_research_extra_lsi"]
+    st.session_state["_pending_research_extra_lsi"] = None
 
 
 # --- SIDEBAR ---
@@ -177,7 +191,7 @@ with tab1:
                 df = pd.DataFrame(rows)
                 st.dataframe(
                     df,
-                    use_container_width=True,
+                    width="content",
                     column_config={
                         "Title": st.column_config.TextColumn("Title", width="large"),
                         "Meta description": st.column_config.TextColumn(
@@ -234,7 +248,7 @@ with tab1:
                         data=csv_bytes,
                         file_name="diagnostyka_raportu.csv",
                         mime="text/csv",
-                        use_container_width=True,
+                        width="content",
                     )
                 with col_exp2:
                     st.download_button(
@@ -242,7 +256,7 @@ with tab1:
                         data=html_export.encode("utf-8"),
                         file_name="diagnostyka_raportu.html",
                         mime="text/html",
-                        use_container_width=True,
+                        width="content",
                     )
     else:
         st.info(
@@ -272,22 +286,28 @@ with tab2:
 
     col_a, col_b = st.columns(2)
     with col_a:
-        paa_default = st.session_state.get("research_paa", "")
         google_sug = st.text_area(
             "🔍 Sugestie Google / PAA:",
-            value=paa_default,
             height=200,
+            key="research_paa",
             placeholder="Wpisz ręcznie lub użyj zakładki 🔍 Research Google",
         )
 
     with col_b:
-        facts_default = st.session_state.get("research_facts", "")
         user_facts = st.text_area(
             "💡 Unikalne fakty i dane:",
-            value=facts_default,
             height=200,
+            key="research_facts",
             placeholder="Lata doświadczenia, certyfikaty, liczby, case studies...",
         )
+
+    st.divider()
+    st.text_area(
+        "🔎 People Also Search / Related searches:",
+        height=140,
+        key="research_extra_lsi",
+        placeholder="Uzupełni się po researchu w zakładce 🔍 Research Google (możesz edytować).",
+    )
 
     selected_lsi = st.session_state.get("selected_lsi", [])
     extra_lsi_raw = st.session_state.get("research_extra_lsi", "")
@@ -350,10 +370,17 @@ with tab3:
                 st.session_state["research_done"] = True
 
                 paa_text = "\n".join(data["paa"]) if data["paa"] else ""
-                st.session_state["research_paa"] = paa_text
-                st.session_state["research_facts"] = data["featured_snippet"]
-                related_text = "\n".join(data["related"]) if data["related"] else ""
-                st.session_state["research_extra_lsi"] = related_text
+                st.session_state["_pending_research_paa"] = paa_text
+                st.session_state["_pending_research_facts"] = data["featured_snippet"]
+                pas = data.get("people_also_search") or []
+                rel = data.get("related") or []
+                combined = []
+                for x in list(pas) + list(rel):
+                    if x and x not in combined:
+                        combined.append(x)
+                related_text = "\n".join(combined) if combined else ""
+                st.session_state["_pending_research_extra_lsi"] = related_text
+                st.rerun()
 
                 col_r1, col_r2 = st.columns(2)
 
@@ -418,7 +445,7 @@ with tab4:
 
     st.divider()
 
-    if st.button("🚀 GENERUJ ARTYKUŁ", type="primary", use_container_width=True):
+    if st.button("🚀 GENERUJ ARTYKUŁ", type="primary", width="content"):
         if not main_word:
             st.error("❌ Wpisz frazę główną w zakładce Konfiguracja SEO!")
         elif not st.session_state.get("competitor_context"):
