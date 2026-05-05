@@ -284,6 +284,12 @@ with tab2:
             placeholder="opcjonalnie",
         )
 
+    enable_proofread = st.checkbox(
+        "🔍 Autokorekta gramatyczna (drugi call do Claude)",
+        value=True,
+        help="Po wygenerowaniu artykułu Claude sprawdzi i poprawi literówki oraz błędy gramatyczne.",
+    )
+
     st.divider()
 
     col_a, col_b = st.columns(2)
@@ -455,9 +461,9 @@ with tab4:
                 "⚠️ Brak raportów konkurencji — artykuł zostanie wygenerowany bez analizy konkurencji."
             )
             odmiany = get_grammar_forms(main_word)
-            with st.spinner("Claude buduje artykuł... (~30-60 sek.)"):
-                try:
-                    st.session_state["generated_article"] = generate_content_final(
+            try:
+                with st.spinner("✍️ Generowanie artykułu..."):
+                    raw_article = generate_content_final(
                         keyword=main_word,
                         competitor_data="",
                         grammar_forms=odmiany,
@@ -467,15 +473,28 @@ with tab4:
                         manual_lsi=st.session_state.get("manual_lsi", ""),
                         heading_keywords=heading_keywords,
                         brand_name=brand_name,
+                        num_competitor_files=len(uploaded_files) if uploaded_files else 1,
+                        internal_report_content=st.session_state["internal_report_content"],
                         competitor_insights=None,
                     )
-                except Exception as e:
-                    st.error(f"❌ Błąd generowania: {e}")
+
+                if enable_proofread:
+                    with st.spinner("🔍 Autokorekta gramatyczna..."):
+                        from utils.llm_logic import proofread_article
+
+                        st.session_state["generated_article"] = proofread_article(
+                            text=raw_article,
+                            brand_name=brand_name,
+                        )
+                else:
+                    st.session_state["generated_article"] = raw_article
+            except Exception as e:
+                st.error(f"❌ Błąd generowania: {e}")
         else:
             odmiany = get_grammar_forms(main_word)
-            with st.spinner("Claude buduje artykuł... (~30-60 sek.)"):
-                try:
-                    st.session_state["generated_article"] = generate_content_final(
+            try:
+                with st.spinner("✍️ Generowanie artykułu..."):
+                    raw_article = generate_content_final(
                         keyword=main_word,
                         competitor_data=st.session_state["competitor_context"],
                         grammar_forms=odmiany,
@@ -485,13 +504,23 @@ with tab4:
                         manual_lsi=st.session_state.get("manual_lsi", ""),
                         heading_keywords=heading_keywords,
                         brand_name=brand_name,
-                        num_competitor_files=(
-                            len(uploaded_files) if uploaded_files else 1
-                        ),
-                        competitor_insights=insights,
+                        num_competitor_files=len(uploaded_files) if uploaded_files else 1,
+                        internal_report_content=st.session_state["internal_report_content"],
+                        competitor_insights=st.session_state.get("competitor_insights"),
                     )
-                except Exception as e:
-                    st.error(f"❌ Błąd generowania: {e}")
+
+                if enable_proofread:
+                    with st.spinner("🔍 Autokorekta gramatyczna..."):
+                        from utils.llm_logic import proofread_article
+
+                        st.session_state["generated_article"] = proofread_article(
+                            text=raw_article,
+                            brand_name=brand_name,
+                        )
+                else:
+                    st.session_state["generated_article"] = raw_article
+            except Exception as e:
+                st.error(f"❌ Błąd generowania: {e}")
 
     if st.session_state["generated_article"]:
         st.divider()
