@@ -7,7 +7,7 @@ from utils.seo_tools import (
     extract_competitor_insights,
     calculate_average_length,
 )
-from utils.llm_logic import generate_content_final
+from utils.llm_logic import generate_content_final, proofread_article
 from utils.ui_helpers import apply_footer
 from utils.dataforseo_research import fetch_serp_research
 
@@ -480,8 +480,6 @@ with tab4:
 
                 if enable_proofread:
                     with st.spinner("🔍 Autokorekta gramatyczna..."):
-                        from utils.llm_logic import proofread_article
-
                         st.session_state["generated_article"] = proofread_article(
                             text=raw_article,
                             brand_name=brand_name,
@@ -511,8 +509,6 @@ with tab4:
 
                 if enable_proofread:
                     with st.spinner("🔍 Autokorekta gramatyczna..."):
-                        from utils.llm_logic import proofread_article
-
                         st.session_state["generated_article"] = proofread_article(
                             text=raw_article,
                             brand_name=brand_name,
