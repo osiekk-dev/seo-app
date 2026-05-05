@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+"""Logika generowania artykułów SEO przez Claude API.
+Firma: DD Serwis Damian Dabrowski. Wersja: 1.1.0
+Data: Maj 2026"""
+
 import streamlit as st
 from anthropic import Anthropic
 from utils.seo_knowledge import get_combined_knowledge
@@ -23,10 +28,8 @@ def generate_content_final(
 
     client = Anthropic(api_key=st.secrets["anthropic"]["api_key"])
 
-    # --- Zaczytaj całą bazę wiedzy ---
     knowledge = get_combined_knowledge()
 
-    # --- RAG: osobne zapytania dla różnych aspektów ---
     context_topic = search_knowledge(keyword)
     context_style = search_knowledge("zasady pisania styl naturalność copywriting")
     context_seo = search_knowledge("SEO nagłówki słowa kluczowe optymalizacja")
@@ -34,8 +37,7 @@ def generate_content_final(
         "E-E-A-T autorytet ekspert wiarygodność doświadczenie"
     )
 
-    # Złącz konteksty, usuń duplikaty "brak dopasowań"
-    def _clean(ctx):
+    def _clean(ctx: str) -> str:
         return ctx if "Brak" not in ctx and "zbyt krótkie" not in ctx else ""
 
     rag_context = "\n\n".join(
@@ -52,7 +54,6 @@ def generate_content_final(
 
     pillar = find_pillar_page(keyword, internal_report_content)
 
-    # Długość — z insights lub fallback
     if competitor_insights and competitor_insights.get("average_words"):
         avg_words = competitor_insights["average_words"]
     else:
@@ -60,7 +61,6 @@ def generate_content_final(
             competitor_data, num_files=num_competitor_files
         )
 
-    # Dane z analizy konkurencji
     competitor_h2_str = ""
     competitor_q_str = ""
     if competitor_insights:
@@ -75,13 +75,11 @@ def generate_content_final(
 
     forms_str = ", ".join(grammar_forms) if grammar_forms else keyword
 
-    # LSI
     lsi_combined = list(selected_lsi)
     if manual_lsi:
         lsi_combined += [w.strip() for w in manual_lsi.splitlines() if w.strip()]
     lsi_str = ", ".join(lsi_combined) if lsi_combined else "brak"
 
-    # Pillar page
     pillar_block = ""
     if pillar:
         pillar_block = f"""
@@ -93,7 +91,6 @@ Wykryto artykuł nadrzędny: "{pillar['title']}" ({pillar['url']})
 → Skup się na szczegółach — ogólne tematy zostaw Pillar Page
 """
 
-    # Marka
     brand_block = ""
     if brand_name:
         brand_block = f"""
@@ -143,6 +140,8 @@ Format wyjściowy: CZYSTY MARKDOWN
 
 H1 (jeden): zawiera frazę główną + korzyść lub kontekst
   Wzorzec: „{keyword} – [co czytelnik zyska/pozna]"
+  WAŻNE: Jeśli H1 zawiera liczbę lub obietnicę (np. „zwiększa zapytania o 100%"),
+  ta DOKŁADNA liczba musi być potwierdzona w treści artykułu. Zakaz obietnic bez pokrycia.
 
 Odmiany frazy (używaj naprzemiennie, naturalnie):
   {forms_str}
@@ -153,12 +152,17 @@ LSI — OBOWIĄZKOWO każde słowo/frazę użyj min. 1x:
 Nagłówki H2/H3:
   - Oparte na pytaniach i longtailach z tematu
   - Każdy H2 = oddzielna myśl/sekcja
+  - Nagłówek MUSI dokładnie opisywać zawartość sekcji — zakaz obiecywania czegoś
+    czego w sekcji nie ma (np. nagłówek "Jak dodać spacer" → sekcja musi uczyć
+    jak DODAĆ, nie jak OGLĄDAĆ cudzy spacer)
   - Min. 1 nagłówek z pytaniem (np. „Jak...", „Czy...", „Ile...")
 
 Akapity:
   - Max 3-4 zdania każdy
   - Pierwsze zdanie = najważniejsza informacja (odwrócona piramida)
   - Jedno pogrubienie **STRONG** na akapit (kluczowy fakt lub fraza)
+  - Każde zdanie musi logicznie wynikać z poprzedniego — zakaz skakania między myślami
+  - Po dwukropku ZAWSZE musi nastąpić pełne zdanie lub lista — zakaz urwanych konstrukcji
 
 Lead (pierwsze 150 słów):
   - Fraza główna w pierwszym zdaniu
@@ -168,6 +172,17 @@ Lead (pierwsze 150 słów):
 Zakończenie:
   - Konkretne CTA lub następny krok dla czytelnika
   - Podsumowanie w 3-4 zdaniach lub TL;DR
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ZASADY DANYCH I STATYSTYK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+→ Każda liczba/statystyka użyta w H1 lub leadzie MUSI być rozwinięta w treści
+→ Tę samą statystykę możesz użyć MAX 1 raz w całym artykule
+  (przy kolejnym wystąpieniu — parafrazuj lub zastąp inną daną)
+→ Jeśli podajesz przykład projektu/klienta — podaj PRZYNAJMNIEJ jeden mierzalny efekt
+  (np. „spacer dla X wygenerował Y wizyt / zwiększył zapytania o Z%")
+  Zakaz ogólnych referencji bez konkretnego rezultatu
+→ Dane z sekcji „Unikalne fakty" traktuj jako priorytetowe — to Twój E-E-A-T
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 MAKSYMALIZACJA SŁÓW KLUCZOWYCH (NATURALNIE)
@@ -201,9 +216,8 @@ NATURALNOŚĆ I PŁYNNOŚĆ
 → Każde zdanie logicznie wynika z poprzedniego
 → Zakaz zaczynania kolejnych akapitów od tego samego słowa
 → Zakaz wyliczanek tam gdzie pasuje tekst ciągły
-→ Zakaz zdań: „To...", „Jest to...", „Są to..."
 → Przejścia między sekcjami — użyj zdania pomostowego
-→ Nie powtarzaj tej samej informacji w różnych akapitach
+→ Nie powtarzaj tej samej informacji w różnych akapitach — każda sekcja wnosi NOWĄ wiedzę
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 STRUKTURY H2 KONKURENCJI (inspiracja — nie kopiuj)
@@ -219,10 +233,19 @@ ZAKAZ ABSOLUTNY
 - Zakaz wymieniania firm/marek/serwisów konkurencji
 - Zakaz parafrazowania cudzych treści
 - Zakaz ogólników: „W dzisiejszym świecie", „Coraz więcej firm", „Warto wiedzieć że"
-- Zakaz fraz AI: „Zanurzmy się", „Przyjrzyjmy się", „Bez wątpienia", „Należy podkreślić"
+- Zakaz fraz AI: „Zanurzmy się", „Przyjrzyjmy się", „Bez wątpienia", „Należy podkreślić",
+  „Należy wykonać", „Należy zauważyć", „Warto zaznaczyć że", „Jest to", „Są to", „To jest"
 - Zakaz superlatywów bez uzasadnienia: „najlepszy", „rewolucyjny", „wyjątkowy"
 - Zakaz zdań: „To...", „Jest to...", „Są to..."
-- Zakaz powtarzania tej samej myśli w różnych akapitach
+- Zakaz powtarzania tej samej myśli lub statystyki w różnych akapitach
+- Zakaz niespójności H1↔treść: liczby i obietnice z tytułu muszą być potwierdzone w artykule
+- Zakaz urwanych zdań po dwukropku (np. „W praktyce {brand_name or 'firma'}:" bez dalszego zdania)
+- Zakaz ogólnych referencji do projektów/klientów bez podania mierzalnego efektu
+- Zakaz fraz bezosobowych: ‚Należy wykonać’, ‚Należy zauważyć’, ‚Warto zaznaczyć’
+  → zastąp: „Zadbaj o...”, „Pamiętaj o...”, „Zwróć uwagę na...”
+- Zakaz nagłówków H2/H3 w formie dopełniacza — zawsze mianownik
+  ❌ „Tworzenia wirtualnych spacerów” → ✅ „Tworzenie wirtualnych spacerów”
+  ❌ „Zdjęć sferycznych – aspekty” → ✅ „Zdjęcia sferyczne – aspekty”
 """
 
     user_prompt = f"""FRAZA GŁÓWNA: {keyword}
@@ -244,9 +267,15 @@ Czytelnik ma po lekturze czuć że dostał realną wiedzę eksperta, a nie artyk
 SELF-CHECK przed oddaniem artykułu:
 ✓ Czy fraza główna „{keyword}" jest w pierwszym zdaniu?
 ✓ Czy każde słowo z listy LSI użyte min. 1x?
-✓ Czy żaden nagłówek nie brzmi sztucznie?
+✓ Czy każda liczba użyta w H1 ma potwierdzenie w treści?
+✓ Czy żaden nagłówek nie obiecuje czegoś czego nie ma w sekcji?
+✓ Czy żadna statystyka nie powtarza się więcej niż 1 raz?
+✓ Czy każdy przykład projektu/klienta ma podany mierzalny efekt?
 ✓ Czy każdy akapit logicznie wynika z poprzedniego?
 ✓ Czy żaden akapit nie zaczyna się tak samo jak poprzedni?
+✓ Czy brak urwanych zdań po dwukropku?
+✓ Czy brak fraz: ‚Należy wykonać’, ‚Należy zauważyć’, ‚Warto zaznaczyć’?
+✓ Czy wszystkie nagłówki H2/H3 są w mianowniku? (nie dopełniaczu)
 ✓ Czy zasady z bazy wiedzy (SEO_KNOWLEDGE + data/) zostały zastosowane?
 Jeśli nie — popraw zanim zwrócisz wynik."""
 
@@ -254,7 +283,7 @@ Jeśli nie — popraw zanim zwrócisz wynik."""
         model="claude-sonnet-4-5",
         system=system_prompt,
         max_tokens=8192,
-        temperature=0.7,
+        temperature=0.5,
         messages=[{"role": "user", "content": user_prompt}],
     )
     return message.content[0].text
