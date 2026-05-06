@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>wirtualny spacer</title>
+<style>
+  body { font-family: Georgia, serif; max-width: 860px; margin: 40px auto; padding: 0 20px; line-height: 1.7; color: #222; }
+  h1 { font-size: 2em; } h2 { font-size: 1.5em; margin-top: 2em; } h3 { font-size: 1.2em; }
+  p { margin-bottom: 1em; } ul, ol { margin-bottom: 1em; } li { margin-bottom: 0.4em; }
+  strong { color: #111; }
+</style>
+</head>
+<body>
+{markdown.markdown(st.session_state['generated_article'])}
+</body>
+</html>
